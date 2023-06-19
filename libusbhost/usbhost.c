@@ -326,7 +326,11 @@ struct usb_device *usb_device_open(const char *dev_name)
      * be triggered by the perm change via inotify rather than polling.
      */
     for (attempts = 0; attempts < MAX_ATTEMPTS; ++attempts) {
-        if (access(dev_name, R_OK | W_OK) == 0) {
+        usleep(SLEEP_BETWEEN_ATTEMPTS_US);
+        if (access(dev_name, F_OK) != 0) {
+            D("usb_device does not exist\n");
+            return NULL;
+        } else if (access(dev_name, R_OK | W_OK) == 0) {
             writeable = 1;
             break;
         } else {
@@ -336,9 +340,6 @@ struct usb_device *usb_device_open(const char *dev_name)
                 break;
             }
         }
-        /* not writeable or readable - sleep and try again. */
-        D("usb_device_open no access sleeping\n");
-        usleep(SLEEP_BETWEEN_ATTEMPTS_US);
     }
 
     if (writeable) {
